@@ -68,6 +68,47 @@ RUN mise install \
 # Ensure mise shims are on PATH for runtime
 ENV PATH="/root/.local/share/mise/shims:${PATH}"
 
+# Install Homebrew on Linux
+# Required dependencies for Homebrew
+RUN apt-get update \
+  && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    build-essential \
+    procps \
+    curl \
+    file \
+    git \
+  && rm -rf /var/lib/apt/lists/*
+
+# Create linuxbrew user and install Homebrew
+RUN useradd -m -s /bin/bash linuxbrew \
+  && mkdir -p /home/linuxbrew/.linuxbrew \
+  && chown -R linuxbrew:linuxbrew /home/linuxbrew
+
+# Install Homebrew as linuxbrew user
+USER linuxbrew
+RUN /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Switch back to root for remaining setup
+USER root
+
+# Add Homebrew to PATH for all users
+ENV PATH="/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:${PATH}"
+
+# Install common dev tools via Homebrew
+RUN brew install \
+    git \
+    curl \
+    wget \
+    jq \
+    yq \
+    ripgrep \
+    fd \
+    fzf \
+  && brew cleanup
+
+# Verify Homebrew installation
+RUN brew --version && brew doctor || true
+
 WORKDIR /app
 
 # Wrapper deps
