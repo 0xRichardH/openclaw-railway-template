@@ -42,12 +42,16 @@ RUN pnpm ui:install && pnpm ui:build
 FROM node:22-bookworm
 ENV NODE_ENV=production
 
+# Install all system dependencies in a single layer
 RUN apt-get update \
   && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
     git \
     xz-utils \
+    build-essential \
+    procps \
+    file \
   && rm -rf /var/lib/apt/lists/*
 
 # Install mise
@@ -67,17 +71,6 @@ RUN mise install \
 
 # Ensure mise shims are on PATH for runtime
 ENV PATH="/root/.local/share/mise/shims:${PATH}"
-
-# Install Homebrew on Linux
-# Required dependencies for Homebrew
-RUN apt-get update \
-  && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    build-essential \
-    procps \
-    curl \
-    file \
-    git \
-  && rm -rf /var/lib/apt/lists/*
 
 # Create linuxbrew user and install Homebrew
 RUN useradd -m -s /bin/bash linuxbrew \
