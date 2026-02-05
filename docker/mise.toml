@@ -1,0 +1,8 @@
+[settings]
+npm.bun = true
+
+[tools]
+bun = "latest"
+"npm:opencode-ai" = "latest"
+"npm:@openai/codex" = "latest"
+"npm:@anthropic-ai/claude-code" = "stable"

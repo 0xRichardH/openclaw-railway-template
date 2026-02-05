@@ -45,7 +45,28 @@ ENV NODE_ENV=production
 RUN apt-get update \
   && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     ca-certificates \
+    curl \
+    git \
+    xz-utils \
   && rm -rf /var/lib/apt/lists/*
+
+# Install mise
+RUN curl -fsSL https://mise.run | sh
+ENV PATH="/root/.local/bin:${PATH}"
+ENV MISE_CONFIG_DIR="/root"
+ENV MISE_GLOBAL_CONFIG_FILE="/root/mise.toml"
+
+# Copy mise config and install tools
+COPY docker/mise.toml /root/mise.toml
+RUN mise install \
+  && mise reshim \
+  && mise exec -- bun --version \
+  && mise exec -- opencode --version \
+  && mise exec -- codex --version \
+  && mise exec -- claude --version
+
+# Ensure mise shims are on PATH for runtime
+ENV PATH="/root/.local/share/mise/shims:${PATH}"
 
 WORKDIR /app
 
