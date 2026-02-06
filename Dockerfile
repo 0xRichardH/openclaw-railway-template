@@ -54,6 +54,9 @@ RUN apt-get update \
     file \
   && rm -rf /var/lib/apt/lists/*
 
+# Install Tailscale
+RUN curl -fsSL https://tailscale.com/install.sh | sh
+
 # Install mise
 RUN curl -fsSL https://mise.run | sh
 ENV PATH="/root/.local/bin:${PATH}"
@@ -119,8 +122,12 @@ RUN printf '%s\n' '#!/usr/bin/env bash' 'exec node /openclaw/dist/entry.js "$@"'
 
 COPY src ./src
 
+# Copy and enable entrypoint script (starts Tailscale + app)
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
 # The wrapper listens on this port.
 ENV OPENCLAW_PUBLIC_PORT=8080
 ENV PORT=8080
 EXPOSE 8080
-CMD ["node", "src/server.js"]
+CMD ["/entrypoint.sh"]
