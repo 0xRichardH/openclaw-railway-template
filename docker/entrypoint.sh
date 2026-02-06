@@ -26,6 +26,15 @@ if [ -n "$TAILSCALE_AUTHKEY" ]; then
     export HTTPS_PROXY="http://localhost:1056"
     export NO_PROXY="localhost,127.0.0.1"
     echo "[tailscale] HTTP proxy available at localhost:1056"
+
+    # Make proxy vars available to interactive shells (railway ssh)
+    if [ ! -f /etc/profile.d/tailscale-proxy.sh ]; then
+        cat <<'EOF' > /etc/profile.d/tailscale-proxy.sh
+export HTTP_PROXY="http://localhost:1056"
+export HTTPS_PROXY="http://localhost:1056"
+export NO_PROXY="localhost,127.0.0.1"
+EOF
+    fi
 else
     echo "[tailscale] TAILSCALE_AUTHKEY not set, skipping Tailscale connection."
 fi
