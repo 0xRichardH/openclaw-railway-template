@@ -65,6 +65,7 @@ ENV MISE_GLOBAL_CONFIG_FILE="/root/mise.toml"
 
 # Copy mise config and install tools
 COPY docker/mise.toml /root/mise.toml
+COPY docker/opencode.jsonc /root/.config/opencode/opencode.json
 RUN mise install \
   && mise reshim \
   && mise exec -- bun --version \
