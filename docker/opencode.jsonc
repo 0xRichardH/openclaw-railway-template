@@ -1,7 +1,7 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "instructions": ["AGENTS.md", "CLAUDE.md", "CONTRIBUTING.md", "docs/guidelines.md", ".cursor/rules/*.md"],
-  "model": "crs/claude-sonnet-4-5",
+  "model": "crs/kimi-k2.5",
   "small_model": "crs/claude-haiku-4-5",
   "theme": "system",
   "autoupdate": false,
@@ -17,9 +17,20 @@
       "npm": "@ai-sdk/anthropic",
       "options": {
         "baseURL": "https://crs.tonob.net/api/v1",
-        "apiKey": "{env:CRS_AUTH_TOKEN}"
+        "apiKey": "{env:CRS_API_KEY}"
       },
       "models": {
+        "kimi-k2.5": {
+          "name": "Kimi-K2.5 [CRS]",
+          "limit": { "context": 262144, "output": 16000 },
+          "modalities": { "input": ["text", "image", "video"], "output": ["text"] },
+          "reasoning": true,
+          "interleaved": { "field": "reasoning_content" },
+          "variants": {
+            "low": { "thinkingBudget": 8192 },
+            "max": { "thinkingBudget": 32768 }
+          }
+        },
         "claude-opus-4-5": {
           "name": "Claude Opus 4.5 [CRS]",
           "limit": { "context": 200000, "output": 64000 },
