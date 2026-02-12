@@ -1,0 +1,78 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": ["AGENTS.md", "CLAUDE.md", "CONTRIBUTING.md", "docs/guidelines.md", ".cursor/rules/*.md"],
+  "model": "crs/kimi-k2.5",
+  "small_model": "crs/claude-haiku-4-5",
+  "theme": "system",
+  "autoupdate": false,
+  "tui": {
+    "diff_style": "auto"
+  },
+  "keybinds": {
+    "leader": "ctrl+x",
+    "input_newline": "shift+return"
+  },
+  "provider": {
+    "crs": {
+      "npm": "@ai-sdk/anthropic",
+      "options": {
+        "baseURL": "https://crs.tonob.net/api/v1",
+        "apiKey": "{env:CRS_API_KEY}"
+      },
+      "models": {
+        "kimi-k2.5": {
+          "name": "Kimi-K2.5 [CRS]",
+          "limit": { "context": 262144, "output": 16000 },
+          "modalities": { "input": ["text", "image", "video"], "output": ["text"] },
+          "reasoning": true,
+          "interleaved": { "field": "reasoning_content" },
+          "variants": {
+            "low": { "thinkingBudget": 8192 },
+            "max": { "thinkingBudget": 32768 }
+          }
+        },
+        "claude-opus-4-5": {
+          "name": "Claude Opus 4.5 [CRS]",
+          "limit": { "context": 200000, "output": 64000 },
+          "modalities": { "input": ["text", "image", "pdf"], "output": ["text"] },
+          "variants": {
+            "low": { "thinkingConfig": { "thinkingBudget": 8192 } },
+            "max": { "thinkingConfig": { "thinkingBudget": 32768 } }
+          }
+        },
+        "claude-sonnet-4-5": {
+          "name": "Claude Sonnet 4.5 [CRS]",
+          "modalities": { "input": ["text", "image", "pdf"], "output": ["text"] },
+          "variants": {
+            "low": { "thinkingConfig": { "thinkingBudget": 8192 } },
+            "max": { "thinkingConfig": { "thinkingBudget": 32768 } }
+          }
+        },
+        "claude-haiku-4-5": {
+          "name": "Claude Haiku 4.5 [CRS]",
+          "limit": { "context": 200000, "output": 64000 },
+          "modalities": { "input": ["text", "image", "pdf"], "output": ["text"] },
+          "variants": {
+            "low": { "thinkingConfig": { "thinkingBudget": 8192 } },
+            "max": { "thinkingConfig": { "thinkingBudget": 32768 } }
+          }
+        }
+      }
+    }
+  },
+  "mcp": {
+    "exa": {
+      "type": "local",
+      "command": ["bunx", "-y", "exa-mcp-server", "tools=get_code_context_exa,web_search_exa"],
+      "environment": {
+        "EXA_API_KEY": "{env:EXA_API_KEY}"
+      },
+      "enabled": true
+    },
+    "grep": {
+      "type": "remote",
+      "url": "https://mcp.grep.app",
+      "enabled": true
+    }
+  }
+}
