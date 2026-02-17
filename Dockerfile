@@ -132,7 +132,9 @@ COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 # The wrapper listens on this port.
-ENV OPENCLAW_PUBLIC_PORT=8080
+# IMPORTANT: Do not hardcode a public listen port here.
+# Railway injects PORT at runtime and routes traffic to that port.
+# If we force a different port, deployments can come up but the domain will route elsewhere.
 ENV PORT=8080
 EXPOSE 8080
 CMD ["/entrypoint.sh"]
