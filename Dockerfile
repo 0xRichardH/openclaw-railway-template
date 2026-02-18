@@ -131,10 +131,9 @@ COPY src ./src
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-# The wrapper listens on this port.
-# IMPORTANT: Do not hardcode a public listen port here.
+# The wrapper listens on $PORT.
+# IMPORTANT: Do not set a default PORT here.
 # Railway injects PORT at runtime and routes traffic to that port.
 # If we force a different port, deployments can come up but the domain will route elsewhere.
-ENV PORT=8080
-EXPOSE 8080
+EXPOSE 3000
 CMD ["/entrypoint.sh"]
