@@ -54,6 +54,8 @@ RUN apt-get update \
     procps \
     file \
     tini \
+    python3 \
+    python3-venv \
   && rm -rf /var/lib/apt/lists/*
 
 # `openclaw update` expects pnpm. Provide it in the runtime image.
@@ -112,6 +114,15 @@ RUN brew install \
 
 # Switch back to root for remaining setup
 USER root
+
+# Persist user-installed tools by default by targeting the Railway volume.
+# - npm global installs -> /data/npm
+# - pnpm global installs -> /data/pnpm (binaries) + /data/pnpm-store (store)
+ENV NPM_CONFIG_PREFIX=/data/npm
+ENV NPM_CONFIG_CACHE=/data/npm-cache
+ENV PNPM_HOME=/data/pnpm
+ENV PNPM_STORE_DIR=/data/pnpm-store
+ENV PATH="/data/npm/bin:/data/pnpm:${PATH}"
 
 WORKDIR /app
 
