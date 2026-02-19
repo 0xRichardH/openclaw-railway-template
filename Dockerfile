@@ -53,6 +53,7 @@ RUN apt-get update \
     build-essential \
     procps \
     file \
+    tini \
   && rm -rf /var/lib/apt/lists/*
 
 # `openclaw update` expects pnpm. Provide it in the runtime image.
@@ -136,4 +137,7 @@ RUN chmod +x /entrypoint.sh
 # Railway injects PORT at runtime and routes traffic to that port.
 # If we force a different port, deployments can come up but the domain will route elsewhere.
 EXPOSE 3000
+
+# Ensure PID 1 reaps zombies and forwards signals.
+ENTRYPOINT ["tini", "--"]
 CMD ["/entrypoint.sh"]
