@@ -53,6 +53,9 @@ RUN apt-get update \
     build-essential \
     procps \
     file \
+    tini \
+    python3 \
+    python3-venv \
   && rm -rf /var/lib/apt/lists/*
 
 # `openclaw update` expects pnpm. Provide it in the runtime image.
@@ -112,6 +115,15 @@ RUN brew install \
 # Switch back to root for remaining setup
 USER root
 
+# Persist user-installed tools by default by targeting the Railway volume.
+# - npm global installs -> /data/npm
+# - pnpm global installs -> /data/pnpm (binaries) + /data/pnpm-store (store)
+ENV NPM_CONFIG_PREFIX=/data/npm
+ENV NPM_CONFIG_CACHE=/data/npm-cache
+ENV PNPM_HOME=/data/pnpm
+ENV PNPM_STORE_DIR=/data/pnpm-store
+ENV PATH="/data/npm/bin:/data/pnpm:${PATH}"
+
 WORKDIR /app
 
 # Wrapper deps
@@ -131,8 +143,12 @@ COPY src ./src
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-# The wrapper listens on this port.
-ENV OPENCLAW_PUBLIC_PORT=8080
-ENV PORT=8080
+# The wrapper listens on $PORT.
+# IMPORTANT: Do not set a default PORT here.
+# Railway injects PORT at runtime and routes traffic to that port.
+# If we force a different port, deployments can come up but the domain will route elsewhere.
 EXPOSE 8080
+
+# Ensure PID 1 reaps zombies and forwards signals.
+ENTRYPOINT ["tini", "--"]
 CMD ["/entrypoint.sh"]

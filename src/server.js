@@ -15,20 +15,20 @@ for (const suffix of ["PUBLIC_PORT", "STATE_DIR", "WORKSPACE_DIR", "GATEWAY_TOKE
   const newKey = `OPENCLAW_${suffix}`;
   if (process.env[oldKey] && !process.env[newKey]) {
     process.env[newKey] = process.env[oldKey];
-    console.warn(`[migration] Copied ${oldKey} → ${newKey}. Please rename this variable in your Railway settings.`);
+    // Best-effort compatibility shim for old Railway templates.
+    // Intentionally no warning: Railway templates can still set legacy keys and warnings are noisy.
   }
+  // Avoid forwarding legacy variables into OpenClaw subprocesses.
+  // OpenClaw logs a warning when deprecated CLAWDBOT_* variables are present.
+  delete process.env[oldKey];
 }
 
-// Railway deployments sometimes inject PORT=3000 by default. We want the wrapper to
-// reliably listen on 8080 unless explicitly overridden.
+// Railway injects PORT at runtime and routes traffic to that port.
+// Do not force a different public port in the container image, or the service may
+// boot but the Railway domain will be routed to a different port.
 //
-// Prefer OPENCLAW_PUBLIC_PORT (set in the Dockerfile / template) over PORT.
-const PORT = Number.parseInt(
-  process.env.OPENCLAW_PUBLIC_PORT?.trim() ??
-    process.env.PORT ??
-    "8080",
-  10,
-);
+// OPENCLAW_PUBLIC_PORT is kept as an escape hatch for non-Railway deployments.
+const PORT = Number.parseInt(process.env.PORT ?? process.env.OPENCLAW_PUBLIC_PORT ?? "3000", 10);
 
 // State/workspace
 // OpenClaw defaults to ~/.openclaw.
@@ -705,14 +705,16 @@ function runCmd(cmd, args, opts = {}) {
 
 app.post("/setup/api/run", requireSetupAuth, async (req, res) => {
   try {
-    const safeWrite = (msg) => {
-      try {
-        if (!res.writableEnded) res.write(String(msg) + "\n");
-      } catch {}
+    const respondJson = (status, body) => {
+      if (res.writableEnded || res.headersSent) return;
+      res.status(status).json(body);
     };
     if (isConfigured()) {
       await ensureGatewayRunning();
-      return res.json({ ok: true, output: "Already configured.\nUse Reset setup if you want to rerun onboarding.\n" });
+      return respondJson(200, {
+        ok: true,
+        output: "Already configured.\nUse Reset setup if you want to rerun onboarding.\n",
+      });
     }
 
     fs.mkdirSync(STATE_DIR, { recursive: true });
@@ -724,10 +726,10 @@ app.post("/setup/api/run", requireSetupAuth, async (req, res) => {
     try {
       onboardArgs = buildOnboardArgs(payload);
     } catch (err) {
-      return res.status(400).json({ ok: false, output: `Setup input error: ${String(err)}` });
+      return respondJson(400, { ok: false, output: `Setup input error: ${String(err)}` });
     }
 
-    safeWrite("[setup] running openclaw onboard...");
+    const prefix = "[setup] running openclaw onboard...\n";
     const onboard = await runCmd(OPENCLAW_NODE, clawArgs(onboardArgs));
 
   let extra = "";
@@ -874,13 +876,13 @@ app.post("/setup/api/run", requireSetupAuth, async (req, res) => {
     await restartGateway();
   }
 
-  return res.status(ok ? 200 : 500).json({
+  return respondJson(ok ? 200 : 500, {
     ok,
-    output: `${onboard.output}${extra}`,
+    output: `${prefix}${onboard.output}${extra}`,
   });
   } catch (err) {
     console.error("[/setup/api/run] error:", err);
-    return res.status(500).json({ ok: false, output: `Internal error: ${String(err)}` });
+    return respondJson(500, { ok: false, output: `Internal error: ${String(err)}` });
   }
 });
 
@@ -1368,6 +1370,27 @@ const server = app.listen(PORT, "0.0.0.0", async () => {
   console.log(`[wrapper] gateway target: ${GATEWAY_TARGET}`);
   if (!SETUP_PASSWORD) {
     console.warn("[wrapper] WARNING: SETUP_PASSWORD is not set; /setup will error.");
+  }
+
+  // Optional operator hook to install/persist extra tools under /data.
+  // This is intentionally best-effort and should be used to set up persistent
+  // prefixes (npm/pnpm/python venv), not to mutate the base image.
+  const bootstrapPath = path.join(WORKSPACE_DIR, "bootstrap.sh");
+  if (fs.existsSync(bootstrapPath)) {
+    console.log(`[wrapper] running bootstrap: ${bootstrapPath}`);
+    try {
+      await runCmd("bash", [bootstrapPath], {
+        env: {
+          ...process.env,
+          OPENCLAW_STATE_DIR: STATE_DIR,
+          OPENCLAW_WORKSPACE_DIR: WORKSPACE_DIR,
+        },
+        timeoutMs: 10 * 60 * 1000,
+      });
+      console.log("[wrapper] bootstrap complete");
+    } catch (err) {
+      console.warn(`[wrapper] bootstrap failed (continuing): ${String(err)}`);
+    }
   }
 
   // Auto-start the gateway if already configured so polling channels (Telegram/Discord/etc.)
