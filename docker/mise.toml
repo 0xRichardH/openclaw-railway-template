@@ -1,0 +1,11 @@
+[settings]
+npm.bun = true
+
+[tools]
+bun = "latest"
+"npm:opencode-ai" = "latest"
+"npm:@openai/codex" = "latest"
+"npm:@anthropic-ai/claude-code" = "stable"
+"npm:agent-browser" = "latest"
+"npm:mcporter" = "latest"
+"npm:clawhub" = "latest"

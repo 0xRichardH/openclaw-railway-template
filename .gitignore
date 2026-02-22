@@ -13,3 +13,6 @@ npm-debug.log*
 
 # OS
 .DS_Store
+
+# OpenCode plans
+.opencode/plans
