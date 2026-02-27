@@ -99,18 +99,24 @@ RUN /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/instal
 ENV PATH="/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:${PATH}"
 
 # Install common dev tools via Homebrew (as linuxbrew user)
-RUN brew install \
+RUN brew tap steipete/tap \
+  && brew install \
     wget \
     jq \
     yq \
+    go \
     ripgrep \
     fd \
     fzf \
+    steipete/tap/gogcli \
+    steipete/tap/summarize \
     gh \
     vim \
     tmux \
   && brew cleanup \
   && brew --version
+
+RUN GOBIN=/home/linuxbrew/.linuxbrew/bin go install github.com/Hyaxia/blogwatcher/cmd/blogwatcher@latest
 
 # Switch back to root for remaining setup
 USER root
