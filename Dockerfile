@@ -49,6 +49,7 @@ RUN apt-get update \
     ca-certificates \
     curl \
     git \
+    sudo \
     xz-utils \
     build-essential \
     procps \
@@ -64,27 +65,29 @@ RUN corepack enable && corepack prepare pnpm@10.23.0 --activate
 # Install Tailscale
 RUN curl -fsSL https://tailscale.com/install.sh | sh
 
+# Create non-root runtime user with passwordless sudo
+RUN useradd -m -s /bin/bash claw \
+  && printf '%s\n' 'claw ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/claw \
+  && chmod 0440 /etc/sudoers.d/claw \
+  && chown -R claw:claw /home/claw
+
 # Install mise
-RUN curl -fsSL https://mise.run | sh
-ENV PATH="/root/.local/bin:${PATH}"
-ENV MISE_CONFIG_DIR="/root"
-ENV MISE_GLOBAL_CONFIG_FILE="/root/mise.toml"
+RUN sudo -u claw -H sh -lc 'curl -fsSL https://mise.run | sh'
+ENV PATH="/home/claw/.local/bin:${PATH}"
+ENV MISE_CONFIG_DIR="/home/claw"
+ENV MISE_GLOBAL_CONFIG_FILE="/home/claw/mise.toml"
 
 # Copy mise config and install tools
-COPY docker/mise.toml /root/mise.toml
-COPY docker/opencode.jsonc /root/.config/opencode/opencode.json
-RUN mise install \
-  && mise reshim \
-  && mise exec -- bun --version \
-  && mise exec -- opencode --version \
-  && mise exec -- codex --version \
-  && mise exec -- claude --version
+COPY --chown=claw:claw docker/mise.toml /home/claw/mise.toml
+COPY --chown=claw:claw docker/opencode.jsonc /home/claw/.config/opencode/opencode.json
+RUN sudo -u claw -H sh -lc '/home/claw/.local/bin/mise install \
+  && /home/claw/.local/bin/mise reshim'
 
 # Install agent-browser dependencies (Chromium + system deps)
-RUN mise exec -- agent-browser install --with-deps
+RUN sudo -u claw -H sh -lc '/home/claw/.local/bin/mise x npm:agent-browser@latest -- agent-browser install --with-deps'
 
 # Ensure mise shims are on PATH for runtime
-ENV PATH="/root/.local/share/mise/shims:${PATH}"
+ENV PATH="/home/claw/.local/share/mise/shims:${PATH}"
 
 # Create linuxbrew user and install Homebrew
 RUN useradd -m -s /bin/bash linuxbrew \
@@ -150,5 +153,7 @@ RUN chmod +x /entrypoint.sh
 EXPOSE 8080
 
 # Ensure PID 1 reaps zombies and forwards signals.
+ENV HOME=/home/claw
+USER claw
 ENTRYPOINT ["tini", "--"]
 CMD ["/entrypoint.sh"]

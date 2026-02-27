@@ -13,6 +13,8 @@ This repo packages **OpenClaw** for Railway with a small **/setup** web wizard s
 ## How it works (high level)
 
 - The container runs a wrapper web server.
+- The runtime process runs as non-root user `claw`.
+- The `claw` user has passwordless sudo enabled (`claw ALL=(ALL) NOPASSWD:ALL`) for admin actions.
 - The wrapper protects `/setup` (and the Control UI at `/openclaw`) with `SETUP_PASSWORD` using HTTP Basic auth.
 - During setup, the wrapper runs `openclaw onboard --non-interactive ...` inside the container, writes state to the volume, and then starts the gateway.
 - After setup, **`/` is OpenClaw**. The wrapper reverse-proxies all traffic (including WebSockets) to the local gateway process.
@@ -106,6 +108,21 @@ mkdir -p /data/npm /data/npm-cache /data/pnpm /data/pnpm-store
 ```
 
 ## Troubleshooting
+
+### Verify runtime user / sudo
+
+Use Railway SSH (or local `docker exec`) and run:
+
+```bash
+whoami
+id -u
+sudo -n true && echo "sudo ok"
+```
+
+Expected:
+- `whoami` prints `claw`
+- `id -u` is not `0`
+- `sudo ok` prints without password prompt
 
 ### “disconnected (1008): pairing required” / dashboard health offline
 
