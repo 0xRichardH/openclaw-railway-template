@@ -1,0 +1,13 @@
+tap "steipete/tap"
+
+brew "wget"
+brew "jq"
+brew "yq"
+brew "go"
+brew "ripgrep"
+brew "fd"
+brew "fzf"
+brew "steipete/tap/gogcli"
+brew "gh"
+brew "vim"
+brew "tmux"

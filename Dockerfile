@@ -91,6 +91,9 @@ RUN useradd -m -s /bin/bash linuxbrew \
   && mkdir -p /home/linuxbrew/.linuxbrew \
   && chown -R linuxbrew:linuxbrew /home/linuxbrew
 
+# Homebrew bundle manifest
+COPY docker/Brewfile /tmp/Brewfile
+
 # Install Homebrew as linuxbrew user
 USER linuxbrew
 RUN /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
@@ -99,18 +102,11 @@ RUN /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/instal
 ENV PATH="/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:${PATH}"
 
 # Install common dev tools via Homebrew (as linuxbrew user)
-RUN brew install \
-    wget \
-    jq \
-    yq \
-    ripgrep \
-    fd \
-    fzf \
-    gh \
-    vim \
-    tmux \
+RUN brew bundle --file=/tmp/Brewfile \
   && brew cleanup \
   && brew --version
+
+RUN GOBIN=/home/linuxbrew/.linuxbrew/bin go install github.com/Hyaxia/blogwatcher/cmd/blogwatcher@latest
 
 # Switch back to root for remaining setup
 USER root
